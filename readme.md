@@ -132,25 +132,151 @@ Dubbo框架图结点说明：
 
 ##### (3-1-4)动态代理
 
+代理模式：给某一个对象提供一个代理对象，并由代理对象代替真实对象做一些事，安全校验、日志打印等。
 
+RPC主要目的就是调用远程方法像调用本地方法一样，不需要关心远程方法的调用细节。
+
+通过动态代理来屏蔽远程方法的底层细节。
+
+https://javaguide.cn/java/basis/proxy.html#_1-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F
 
 ##### (3-1-5)负载均衡
 
+
+
 ##### (3-1-6)传输协议
+
+需要设计一个私有RPC协议，这个协议是客户端和服务端消费的基础。协议中定义：传输数据的类型、每种类型的数据所占字节。
+
+标准的RPC协议包括：
+
+​	· 魔数：通常是4个字节，主要为了筛选来到服务端的数据包，服务端首先取出前4个字节进行比较，以此能够最快辨别出这个数据包是否是遵循自定义协议的，若是无效数据包则可以关闭连接以节省资源。
+
+​	· 序列化编号：标识序列化的方式，比如是使用Java自带的序列化，还是json\kryo等序列化方式
+
+​	· 消息体长度：
 
 
 
 #### (3-2)实现RPC的前置知识
 
+##### (3-2-1)Java
+
+​	· 动态代理机制
+
+​	· 序列化机制及序列化框架对比
+
+​	· 线程池
+
+​	· CompletableFuture
+
+##### (3-2-2)Netty
+
+​	· 使用Netty进行网络传输
+
+​	· ByteBuf
+
+​	· Netty粘包拆包
+
+​	· Netty长连接和心跳机制
+
+##### (3-2-3)Zookeeper
+
+​	· 基本概念
+
+​	· 数据结构
+
+#### (3-3)总结
+
+实现一个RPC框架至少需要包括：
+
+​	· 注册中心：负责地址注册与查找，相当于目录服务
+
+​	· 网络传输：通过网络请求传递目标类和参数到服务提供端
+
+​	· 序列化和反序列化： 
+
+​	· 动态代理：屏蔽远程调用的底层细节
+
+​	· 负载均衡：
+
+​	· 传输协议：
+
+
+
+## [4]序列化介绍以及序列化协议选择
+
+#### (4-1)什么是序列化和反序列化
+
+序列化：将数据结构或对象转换成二进制字节流
+
+反序列化：二进制字节流转换成数据结构或对象
+
+序列化和反序列化场景：
+
+​	· 网络传输
+
+​	· 存储到文件
+
+​	· 存储到数据库
+
+​	· 存储到内存
+
+序列化的主要目的是将数据存储到数据库、内存、文件系统或通过网络传输。
+
+![img](https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fmy-blog-to-use.oss-cn-beijing.aliyuncs.com%2F2020-8%2Fa478c74d-2c48-40ae-9374-87aacf05188c.png&sign=d94defe4f0e0d2d445d2d061f751199585b252720bc6b2e26fb2010bf7e6c1c7)
+
+序列化协议对应TCP/IP协议中的表示层即4曾模型中的应用层。
+
+#### (4-2)常见序列化协议
+
+##### (4-2-1)Java自带序列化方式
+
+```java
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Builder
+@ToString
+public class RpcRequest implements Serializable{
+  private static final long serialVersionID = 1234567996543123;
+  private String requestID;
+  private String interfaceName;
+  private String methodName;
+  private Object[] parameters;
+  private Class<?>[] paramTypes;
+  private RpcMessageTypeEnum rpcMessageTypeEnum;
+}
+```
+
+
+
+##### (4-2-2)Kryo
+
+高性能序列化/反序列化工具，变长存储特性使用了字节码生成机制，拥有较高的运行速度和较小的字节码体积。
+
+```java
+```
 
 
 
 
 
 
-## [4]序列化介绍以及序列化协议选择ibay8y
 
 ## [5]Socket 网络通信实战
+
+##### (5-1)什么是socket套接字
+
+
+
+
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2F4bbc8291-3819-47e0-9de1-5f6d4c80fed3-20200802201645361.png&sign=90903490f920a47465fb1c67b31c19e7b6d5d58e310c5761cdb69443cc503b3a" alt="img" style="zoom:60%;" />
+
+
+
+
 
 
 
