@@ -582,19 +582,296 @@ JDK动态代理类使用步骤：
 
 
 
-## [8]ZooKeeper常用命令+ Curator使用详解
+## [8]ZooKeeper常用命令+Curator使用详解
+
+zookeeper：https://javaguide.cn/distributed-system/distributed-process-coordination/zookeeper/zookeeper-intro.html#_2-2-zookeeper-%E6%A6%82%E8%A7%88
+
+
+
+​	本次RPC框架使用zookeeper存储服务的相关信息，并且使用Zookeeper Java客户端Curator对Zookeeper进行增删改查。
+
+#### (8-1)Zookeeper安装和使用
+
+##### 安装
+
+a.使用docker安装zookeeper
+
+```shell
+docker pull zookeeper:3.5.8
+```
+
+b.运行zookeeper
+
+```shell
+docker run -d --name zookeeper -p 2181:2181 zookeeper:3.5.8
+```
+
+##### 连接zookeeper
+
+a.进入zookeeper容器
+
+先使用`docker ps`查看zookeeper查看zookeeper的ContainerID，然后使用`docker exec -it ContainerID /bin/bash`
+
+b.进入bin目录，通过`./zkCli.sh -server 127.0.0.1:2181`连接zookeeper服务
+
+```shell
+root@eaf80fc620cb:/apache-zookeeper-3.5.8-bin
+```
+
+控制台显示以下输出，则连接成功
+
+![img](https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2Fimage-20200805144047420.png&sign=b6053ecde85438304fb9c42a15194dea13185f327f30a7e9159d1cbbed0b620c)
+
+##### 常用命令演示
+
+创建节点-create
+
+更新节点内容-set
+
+获取节点内容-get
+
+查看节点状态-stat
+
+查看节点信息和状态-ls2
+
+#### (8-2)Zookeeper Java客户端Curator
+
+Curator是Netflix开发的Zookeeper Java客户端
+
+添加maven依赖
+
+```pom
+```
+
+##### (8-2-1)连接zookeeper客户端
+
+通过`CuratorFrameworkFactory`创建`CuratorFramework`对象，然后调用`start()`方法
+
+```java
+```
+
+参数说明：
+
+​	·`baseSleepTimeMs`：重试之间等待的初试时间
+
+​	·`maxRetries`：最大重试次数
+
+​	·`connectString`：要连接的服务器列表
+
+​	·`retryPolicy`：重试策略
+
+##### (8-2-2)数据节点的增删改查
+
+node分类4大类
+
+- **持久（PERSISTENT）节点** ：一旦创建就一直存在即使 ZooKeeper 集群宕机，直到将其删除。
+- **临时（EPHEMERAL）节点** ：临时节点的生命周期是与 **客户端会话（session）** 绑定的，**会话消失则节点消失** 。并且，**临时节点只能做叶子节点** ，不能创建子节点。
+- **持久顺序（PERSISTENT_SEQUENTIAL）节点** ：除了具有持久（PERSISTENT）节点的特性之外， 子节点的名称还具有顺序性。比如 `/node1/app0000000001` 、`/node1/app0000000002` 。
+- **临时顺序（EPHEMERAL_SEQUENTIAL）节点** ：除了具备临时（EPHEMERAL）节点的特性之外，子节点的名称还具有顺序性。
+
+
+
+##### (8-2-3)监听器
+
+
+
+
+
+
+
+
 
 
 
 ## [9]RPC 框架代码分析之网络传输模块
 
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2021-1%2F1606449068456-bd53ed94-ef7e-4791-b4c1-fc24a7867e47.png&sign=7e7f20c6b0d9ef35f239f57350e4cc88670298c8885a97a4f0f831c9dc71bd91" alt="img" style="zoom: 50%;" />
+
+分为4个包：
+
+​	
+
+#### (9-1)网络传输实体类
+
+网络传输实体类主要在dto包下，主要有两个类：
+
+`RpcRequest.java`
+
+rpc请求实体，当调用远程方法时，需要先传递一个RpcRequest给对方，里面包括要调用的目标方法和类的参数、名称等。
+
+group主要用于一个接口有多个类实现的情况
+
+```java
+```
+
+`RpcResponse.java`
+
+调用结果通过RpcResponse.java返回给客户端
+
+```java
+```
+
+#### (9-2)网络传输
+
+先定义一个rpc请求的顶层接口，分别使用Socket和Netty对接口进行实现
+
+```java
+
+```
+
+##### (9-2-1)基于Socket
+
+客户端
+
+客户端发送网络请求到服务端，知道了服务端到地址后，可以通过`SocketRpcClient`发送RPC请求RpcRequest到服务端。
+
+```java
+```
+
+服务端`SocketRpcServer.java`
+
+```java
+```
+
+##### (9-2-2)基于Netty
+
+客户端
+
+`NettyClient.java`
+
+Netty客户端主要提供了：
+
+​	·`doConnect()`用于连接服务端，并返回对应的`channel()`
+
+​	·`sendRpcRequest()`用于传输rpc请求到服务端
+
+```java
+```
+
+`UnprocessedRequests.java`
+
+用于存放未被服务端处理的请求
+
+```java
+```
+
+`NettyClientHandler.java`
+
+自定义channelhandler处理服务器发送的数据
+
+```java
+```
+
+`ChannelProvider.java`
+
+用于存放Channel
+
+```java
+```
+
+服务端
+
+`NettyRpcServer.java`
+
+监听客户端的连接，提供了两个用户手动注册的方法
+
+```java
+```
+
+`NettyServerHandler.java`
+
+自定义服务端channelhandler处理客户端发送的数据
+
+```
+0   1   2   3   4       5 6 7 8 8 10 11 12 13 14 15 16
++---+---+---+---+-------+
+|   magic code  |version|
++----------------------------------------------------------
+|
+|											body
+| 									.... ....
+|
++----------------------------------------------------------
+```
+
+#### (9-3)传输协议
+
+```java
+
+```
+
+
+
+#### (9-4)编解码器
+
+主要用到Kryo序列化和反序列化以及Netty网络传输字节容器ByteBuf
+
+编解码器主要作用是在Netty进行网络传输的对象类型ByteBuf和Java代码层面业务对象的转换。
+
+`RpcMessageDecoder.java`
+
+自定义解码器，将ByteBuf对象转换成业务对象
+
+`RpcMessageEncoder.java`
+
+
+
 
 
 ## [10]RPC 框架代码分析之注册中心模块
 
+整体模块介绍
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2Fimage-20200810150910276.png&sign=99130d81192c4416c0a92af845f2441e21c8f10a75e3de56427b843b0679cf3d" alt="img" style="zoom: 67%;" />
+
+
+
+定义两个接口分别实现服务发现和服务注册：`ServiceDiscory.java`和`ServiceRegistry.java`
+
+
+
+`ServiceDiscory.java`
+
+```java
+
+```
+
+`ServiceRegistry.java`
+
+```java
+
+```
+
+使用zookeeper作为注册中心的实现方式，并实现两个接口
+
+`ZkServiceRegistry.java`
+
+当服务被注册进zookeeper，将完整的服务名称rpcServiceName(classname + group + version)作为根节点，字节点是对应的服务地址。
+
+​	·class name：服务接口名即类名
+
+​	·version：服务版本
+
+​	·group：服务所在的组
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2Fimage-20200810154140815.png&sign=4b500b46feaaf8b65bd8c0fffaf2614936c4e01a1144c41bc2dca6f45aea9127" alt="img" style="zoom:67%;" />
+
+`ZkServiceDiscovery.java`
+
+```java
+```
+
+`Curatorutils.java`
+
 
 
 ## [11]RPC 框架代码分析之其他模块
+
+
+
+
+
+
 
 ## [12]（优化）使用CompletableFuture优化接受服务提供端返回结果
 
