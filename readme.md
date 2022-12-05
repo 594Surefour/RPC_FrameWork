@@ -867,11 +867,85 @@ Netty客户端主要提供了：
 
 ## [11]RPC 框架代码分析之其他模块
 
+#### (11-1)动态代理屏蔽网络传输细节
 
+对应代码`RpcClientProxy.java`
+
+```java
+```
+
+调用远程方法时，实际通过代理对象调用的
+
+获取代理对象的方法如下：
+
+```java
+```
+
+网络传输细节被封装在`invoke()`方法中
+
+```java
+
+```
+
+#### (11-2)通过注解注册/消费服务
+
+核心代码放在 src/main/java/github/javaguide/spring 下面
+
+定义两个注解：
+
+​	·RpcService：注册服务
+
+​	·RpcReference：消费服务
+
+
+
+RpcService.java
+
+```java
+```
+
+RpcReference.java
+
+```java
+```
 
 
 
 
 
 ## [12]（优化）使用CompletableFuture优化接受服务提供端返回结果
+
+#### (12-1)使用AttributeMap接收服务端返回结果
+
+最开始的时候通过AttributeMap绑定到channel上
+
+`NettyClientTransport.java`用来发送RpcRequest请求
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2FNettyClientTransport1.png&sign=7059a1ee27a1c663f57c81a6ec72478132905011245b80a68a10187ac6d2fe03" style="zoom:67%;" />
+
+`NettyClientHandler.java`自定义客户端ChannelHandler来处理服务端发送到数据
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2FNettyClientHandle1.png&sign=85f4f5c400e185c357fbf1d68ae66db6be2af4781762930281f1dd54541bdedc" style="zoom:67%;" />
+
+#### (12-2)使用CompletableFuture进行优化
+
+`NettyClientTransport.java用来发送RpcRequest请求`
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2FNettyClientTransport2.png&sign=73c584f9ab0ba7280e5a0747a88b2868b167be1c1377c1b7a9ce0380b26308ee" style="zoom:67%;" />
+
+`NettyClientHandler.java`自定义客户端ChannelHandler来处理服务端发送到数据
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2FNettyClientHandle2.png&sign=5c77bef3ef9792f0d8ad573476024e1521085b6caba0d9160321ecfe486d2780" style="zoom:67%;" />
+
+`UnprocessedRequests.java`存放了未处理的请求
+
+<img src="https://www.yuque.com/api/filetransfer/images?url=https%3A%2F%2Fguide-blog-images.oss-cn-shenzhen.aliyuncs.com%2F2020-8%2FUnprocessedRequests.png&sign=64040a06102ab05ab140f6caa66f7d468885e408f1db3da6964546d7c79ea5c3" style="zoom:67%;" />
+
+只需要以下方式就可以成功接受客户端的结果
+
+```java
+CompletableFuture<RpcResponse> completableFuture = (CompletableFuture<RpcResponse>)clientTransport.sendRpcRequest(rpcRequest);
+
+rpcResponse = completableFuture.get();
+```
 
